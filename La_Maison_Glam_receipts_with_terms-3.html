@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#563d53"><meta name="description" content="La Maison Glam — gestion de location de robes et tenues traditionnelles"><link rel="manifest" href="manifest.webmanifest">
+<title>La Maison Glam — Gestion de location</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--plum:#563d53;--rose:#a77f98;--gold:#b18b55;--cream:#fbf7f1;--line:#eadfe7;--ink:#302832;--muted:#817681;--green:#39785b;--red:#a34444}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:Tahoma,Arial,sans-serif}
+header{background:linear-gradient(120deg,#493347,#795b72);color:white;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-size:22px;font-weight:800;letter-spacing:.3px}.brand small{display:block;font-size:11px;font-weight:400;color:#eadde8;margin-top:4px}
+.wrap{max-width:1200px;margin:auto;padding:18px}.topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button,.btn{border:0;border-radius:10px;padding:10px 14px;background:var(--plum);color:white;cursor:pointer;font-weight:700}
+button.secondary{background:#efe6ed;color:var(--plum)}button.gold{background:var(--gold)}button.danger{background:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;background:white;color:var(--ink);font:inherit}
+label{font-size:13px;color:var(--muted);display:block;margin:7px 0 5px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat,.panel{background:white;border:1px solid var(--line);border-radius:15px;padding:15px}
+.stat b{display:block;font-size:24px;color:var(--plum);margin-top:7px}.muted{color:var(--muted);font-size:12px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}nav button{background:#eee5ec;color:var(--plum)}nav button.active{background:var(--plum);color:white}
+h2{font-size:19px;margin:0 0 12px;color:var(--plum)}h3{font-size:15px;color:var(--plum);margin:0 0 10px}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.formgrid .full{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;font-size:13px;background:white}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}th{background:#f7f0f5;color:var(--plum)}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:12px}
+.tag{display:inline-block;border-radius:20px;padding:4px 8px;background:#f1eaf0;color:var(--plum);font-size:11px}
+.actions{display:flex;gap:6px;flex-wrap:wrap}.actions button{font-size:11px;padding:7px 9px}
+.hidden{display:none!important}.notice{background:#fff7e8;border:1px solid #ead8b7;border-radius:12px;padding:12px;font-size:13px;line-height:1.7;margin-bottom:14px}
+.login{max-width:440px;margin:7vh auto;background:white;padding:24px;border:1px solid var(--line);border-radius:18px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:12px}.formgrid{grid-template-columns:1fr}}
+@media(max-width:520px){header{padding:14px}.brand{font-size:19px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding:11px}.stat b{font-size:19px}th,td{padding:8px;font-size:12px}}
+@media print{header,nav,.no-print,button{display:none!important}body{background:white}.wrap{max-width:none;padding:0}.panel{border:0}}
+</style>
+</head>
+<body>
+<header><div class="brand">♛ La Maison Glam <small>LOCATION DE ROBES & TENUES TRADITIONNELLES</small></div><div class="topline"><span id="who"></span><button class="secondary" onclick="logout()">تسجيل الخروج</button></div></header>
+<div id="setup" class="login hidden">
+<h2>إعداد التطبيق لأول مرة</h2><div class="notice">أنشئي حساب المالكة وأول حساب موظفة. يمكنك إضافة موظفات أخريات لاحقاً.</div>
+<label>كلمة سر المالكة</label><input id="passOwner" type="password" placeholder="6 أحرف على الأقل">
+<label>اسم أول موظفة</label><input id="firstStaffName" placeholder="مثلاً: نور">
+<label>كلمة سر أول موظفة</label><input id="passStaff" type="password" placeholder="6 أحرف على الأقل">
+<button style="width:100%;margin-top:14px" onclick="setupAccounts()">إنشاء الحسابات</button>
+</div>
+<div id="login" class="login hidden">
+<h2>تسجيل الدخول</h2>
+<label>البريد الإلكتروني</label><input id="loginEmail" type="email" value="rayenaiouni0@gmail.com" autocomplete="username">
+<label>كلمة السر</label><input id="loginPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+<button style="width:100%;margin-top:14px" onclick="login()">دخول</button><p id="loginErr" class="muted"></p>
+<p class="muted">الدخول يتم عبر حساب Supabase الآمن.</p>
+</div>
+<div id="connectionState" class="wrap hidden" style="padding-top:0"><div class="notice" id="connectionText">جاري الاتصال بقاعدة البيانات…</div></div>
+<main id="app" class="wrap hidden">
+
+<nav id="nav"></nav><section id="view"></section>
+</main>
+<script>
+const KEY='lmg_data_v1', AUTH='lmg_auth_v1';
+const SUPABASE_URL='https://iyqczxilmyltgtzkqhkv.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_vlsXllmyJc8bsWyG-2Ziig_ioCZEzNT';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+let cloudReady=false, cloudSaving=false, cloudSaveTimer=null, authUser=null;
+let db={accounts:null,items:[],clients:[],bookings:[],expenses:[],payments:[],activity:[]},role=null,tab='home',currentUserName='',currentPermissions=null;
+const $=id=>document.getElementById(id), money=n=>(Number(n)||0).toLocaleString('fr-DZ')+' DA', esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function load(){
+ try{db=JSON.parse(localStorage.getItem(KEY))||db}catch(e){}
+ if(!db.items)db.items=[];if(!db.clients)db.clients=[];if(!db.bookings)db.bookings=[];if(!db.expenses)db.expenses=[];if(!db.payments)db.payments=[];if(!db.activity)db.activity=[];
+ if(db.accounts && typeof db.accounts.owner==='string'){
+   db.accounts={owner:{name:'ريان',password:db.accounts.owner},employees:[{id:'legacy-staff',name:'نور',password:db.accounts.staff||'',active:true}]};
+ }
+ if(db.accounts && !Array.isArray(db.accounts.employees))db.accounts.employees=[];
+}
+function save(){
+ localStorage.setItem(KEY,JSON.stringify(db));
+ if(cloudReady){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(pushCloudState,650)}
+}
+async function pushCloudState(){
+ if(!cloudReady||cloudSaving||!authUser)return;
+ cloudSaving=true;
+ try{
+  const payload={...db,accounts:null};
+  const {error}=await supabaseClient.from('app_state').upsert({id:1,data:payload,updated_at:new Date().toISOString(),updated_by:authUser.id},{onConflict:'id'});
+  if(error)throw error;
+  setConnection('متصل — آخر التغييرات محفوظة في قاعدة البيانات.',true);
+ }catch(e){console.error(e);setConnection('تعذر حفظ التغييرات في السحابة: '+(e.message||'تحققي من صلاحيات app_state'),false)}
+ finally{cloudSaving=false}
+}
+function setConnection(message,ok){$('connectionState').classList.remove('hidden');$('connectionText').textContent=message;$('connectionText').style.background=ok?'#edf8f0':'#fff2ed';}
+async function pullCloudState(){
+ const {data,error}=await supabaseClient.from('app_state').select('data').eq('id',1).maybeSingle();
+ if(error)throw error;
+ if(data?.data){
+  const remote=data.data;
+  const keys=['items','clients','bookings','expenses','payments','activity'];
+  const remoteHasData=keys.some(k=>Array.isArray(remote[k])&&remote[k].length>0);
+  const localHasData=keys.some(k=>Array.isArray(db[k])&&db[k].length>0);
+  if(!remoteHasData&&localHasData){
+   const payload={...db,accounts:null};
+   const {error:saveError}=await supabaseClient.from('app_state').upsert({id:1,data:payload,updated_at:new Date().toISOString(),updated_by:authUser.id},{onConflict:'id'});
+   if(saveError)throw saveError;
+  }else{
+   db={...db,...remote,accounts:null};keys.forEach(k=>{if(!Array.isArray(db[k]))db[k]=[]});localStorage.setItem(KEY,JSON.stringify(db));
+  }
+ }else {const payload={...db,accounts:null};const {error:saveError}=await supabaseClient.from('app_state').upsert({id:1,data:payload,updated_at:new Date().toISOString(),updated_by:authUser.id},{onConflict:'id'});if(saveError)throw saveError}
+}
+function refreshLoginAccounts(){
+ const sel=$('loginRole');if(!sel)return;
+ let opts='<option value="owner">المالكة — ريان</option>';
+ (db.accounts?.employees||[]).filter(e=>e.active!==false).forEach(e=>opts+=`<option value="${esc(e.id)}">${esc(e.name)} — موظفة</option>`);
+ sel.innerHTML=opts;
+}
+async function boot(){
+ load();$('setup').classList.add('hidden');$('login').classList.remove('hidden');$('connectionState').classList.remove('hidden');
+ try{const {data:{session}}=await supabaseClient.auth.getSession();if(session){authUser=session.user;await enterApp()}else setConnection('جاهز لتسجيل الدخول إلى قاعدة البيانات.',true)}
+ catch(e){setConnection('تعذر الاتصال بـ Supabase: '+(e.message||''),false)}
+}
+function setupAccounts(){
+ let a=$('passOwner').value,b=$('passStaff').value,n=$('firstStaffName').value.trim()||'الموظفة الأولى';
+ if(a.length<6||b.length<6)return alert('كلمة السر يجب أن تكون 6 أحرف على الأقل');
+ db.accounts={owner:{name:'ريان',password:a},employees:[{id:'emp-'+Date.now(),name:n,password:b,active:true}]};
+ save();$('setup').classList.add('hidden');refreshLoginAccounts();$('login').classList.remove('hidden');
+}
+async function login(){
+ const email=$('loginEmail').value.trim(),password=$('loginPass').value;
+ $('loginErr').textContent='جاري فحص الاتصال ثم تسجيل الدخول…';
+ try{
+  if(!window.supabase?.createClient) throw new Error('مكتبة Supabase لم تُحمّل. تحققي من اتصال الإنترنت ثم أعيدي فتح التطبيق.');
+  // A lightweight in-app health check gives a clearer diagnosis than the generic Failed to fetch.
+  let health;
+  try{
+   health=await fetch(SUPABASE_URL+'/auth/v1/health',{method:'GET',headers:{apikey:SUPABASE_PUBLISHABLE_KEY}});
+  }catch(netErr){
+   const localFile=location.protocol==='file:';
+   throw new Error(localFile
+    ? 'المتصفح يمنع الاتصال لأن التطبيق مفتوح كملف من الكمبيوتر (file://). افتحي التطبيق عبر استضافة HTTPS أو خادم محلي؛ رابط Supabase نفسه يعمل.'
+    : 'تعذر الوصول إلى خدمة Supabase من هذه الصفحة. تحققي من الإنترنت أو VPN أو مانع الإعلانات، ثم أعيدي المحاولة.');
+  }
+  if(!health.ok) throw new Error('خدمة Supabase ردّت برمز '+health.status+'. تحققي من إعدادات المشروع والمفتاح.');
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  authUser=data.user;await enterApp();
+ }catch(e){
+  console.error('La Maison Glam login error:',e);
+  $('loginErr').textContent='فشل الدخول: '+(e.message||'تحققي من البريد وكلمة السر');
+ }
+}
+async function enterApp(){
+ const {data:profile,error:profileError}=await supabaseClient.from('staff_profiles').select('user_id,role,full_name,active,permissions').eq('user_id',authUser.id).maybeSingle();
+ if(profileError)throw profileError;
+ if(profile && profile.active===false){await supabaseClient.auth.signOut();authUser=null;throw new Error('هذا الحساب موقوف. تواصلي مع المالكة.')}
+ if(profile){role=profile.role==='owner'?'owner':'staff';currentUserName=profile.full_name||authUser.email||'مستخدمة';currentPermissions=Array.isArray(profile.permissions)&&profile.permissions.length?profile.permissions:null}
+ else if(authUser.email?.toLowerCase()==='rayenaiouni0@gmail.com'){role='owner';currentUserName='مسؤولة La Maison Glam';currentPermissions=null}
+ else {await supabaseClient.auth.signOut();authUser=null;throw new Error('الحساب غير مسجل في staff_profiles. أضيفيه من Supabase أولاً.')}
+ try{await pullCloudState();cloudReady=true}catch(e){cloudReady=false;setConnection('تم الدخول لكن تعذرت قراءة app_state: '+(e.message||''),false);throw e}
+ $('login').classList.add('hidden');$('app').classList.remove('hidden');$('who').textContent=role==='owner'?`${currentUserName} — المالكة`:`${currentUserName} — موظفة`;
+ setConnection('متصل بقاعدة البيانات. البيانات المشتركة جاهزة.',true);render();
+}
+async function logout(){await supabaseClient.auth.signOut();authUser=null;cloudReady=false;role=null;currentUserName='';currentPermissions=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('loginPass').value='';setConnection('تم تسجيل الخروج.',true)}
+const tabs=[['home','لوحة التحكم'],['items','خزانة الملابس'],['availability','هل الفستان متاح؟'],['clients','الزبونات'],['bookings','الحجوزات'],['returns','التسليم والإرجاع'],['receipts','الوصولات'],['finance','الحسابات'],['payments','الدفعات'],['reports','التقارير'],['activity','سجل النشاط'],['settings','الإعدادات']];
+function render(){let allowed=tabs.filter(t=>role==='owner'||(Array.isArray(currentPermissions)&&currentPermissions.length?currentPermissions.includes(t[0]):!['finance','payments','reports','activity','settings'].includes(t[0])));if(!allowed.some(t=>t[0]===tab))tab='home';$('nav').innerHTML=allowed.map(t=>`<button class="${tab===t[0]?'active':''}" onclick="tab='${t[0]}';render()">${t[1]}</button>`).join('');let v=$('view');({home:home,items:itemsPage,availability:availabilityPage,clients:clientsPage,bookings:bookingsPage,returns:returnsPage,receipts:receiptsPage,finance:financePage,payments:paymentsPage,reports:reportsPage,activity:activityPage,settings:settingsPage}[tab]||home)(v)}
+function home(v){let active=db.bookings.filter(b=>b.status!=='ملغى');let due=active.filter(b=>b.returnDate===today()).length;let rented=db.items.filter(i=>i.status==='مؤجر').length;v.innerHTML=`<h2>لوحة التحكم</h2><div class="grid"><div class="stat">القطع المسجلة<b>${db.items.length}</b></div><div class="stat">الحجوزات النشطة<b>${active.length}</b></div><div class="stat">قطع عند الزبونات<b>${rented}</b></div><div class="stat">إرجاع اليوم<b>${due}</b></div></div><div class="panel" style="margin-top:14px"><h3>تذكيرات الإرجاع</h3>${reminders()}</div><div class="panel" style="margin-top:14px"><h3>آخر الحجوزات</h3>${bookingTable(db.bookings.slice(-5).reverse())}</div>`}
+function today(){let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function logAction(action,details=''){db.activity.unshift({id:Date.now()+Math.random(),date:new Date().toLocaleString('fr-DZ'),user:currentUserName||'النظام',role:role||'system',action,details});if(db.activity.length>2000)db.activity.length=2000;}
+function reminders(){let list=db.bookings.filter(b=>!['ملغى','مكتمل'].includes(b.status)&&b.returnDate).filter(b=>{let d=(new Date(b.returnDate+'T12:00:00')-new Date(today()+'T12:00:00'))/86400000;return d<=1});return list.length?list.map(b=>`<p>🔔 ${esc(b.clientName)} — ${esc(b.itemCode)} — ${b.returnDate} ${b.returnDate<today()?'<b style="color:#a34444">متأخر</b>':'تذكير قريب'}</p>`).join(''):'لا توجد إرجاعات مستحقة اليوم أو غداً.'}
+
+let selectedItemPhoto='';
+function previewItemPhoto(event){
+ const file=event.target.files?.[0];
+ if(!file){selectedItemPhoto='';$('photoPreview').innerHTML='';return}
+ if(!file.type.startsWith('image/')){alert('اختاري ملف صورة فقط');event.target.value='';return}
+ if(file.size>12*1024*1024){alert('الصورة كبيرة بزاف. اختاري صورة أقل من 12 ميغابايت.');event.target.value='';return}
+ const reader=new FileReader();
+ reader.onload=()=>{
+  const img=new Image();
+  img.onload=()=>{
+   const max=1100,scale=Math.min(1,max/Math.max(img.width,img.height));
+   const canvas=document.createElement('canvas');
+   canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+   canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+   selectedItemPhoto=canvas.toDataURL('image/jpeg',0.78);
+   $('photoPreview').innerHTML=`<img src="${selectedItemPhoto}" alt="معاينة الصورة" style="max-width:180px;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid var(--line)">`;
+  };
+  img.onerror=()=>alert('تعذر قراءة الصورة');
+  img.src=reader.result;
+ };
+ reader.readAsDataURL(file);
+}
+
+function itemsPage(v){selectedItemPhoto='';v.innerHTML=`<h2>خزانة الملابس</h2><div class="panel"><h3>إضافة قطعة جديدة</h3><div class="formgrid">
+<div><label>رقم القطعة</label><input id="itCode" placeholder="ROB-001"></div><div><label>النوع</label><select id="itType"><option>فستان سهرة</option><option>فستان عرس</option><option>قفطان</option><option>لباس تقليدي</option></select></div>
+<div><label>الوصف</label><input id="itName" placeholder="الوصف أو الاسم"></div><div><label>اللون</label><input id="itColor"></div><div><label>المقاس</label><input id="itSize"></div><div><label>سعر الكراء (دج)</label><input id="itPrice" type="number" min="0"></div><div><label>الضمان الافتراضي (دج)</label><input id="itDeposit" type="number" min="0"></div><div class="full"><label>تحميل صورة القطعة (اختياري)</label><input id="itPhotoFile" type="file" accept="image/*" onchange="previewItemPhoto(event)"><div id="photoPreview" style="margin-top:8px"></div><small class="muted">اختاري صورة من الهاتف أو الكمبيوتر، وستظهر داخل بطاقة القطعة.</small></div></div><button style="margin-top:12px" onclick="addItem()">إضافة للخزانة</button></div><div class="tablewrap">${itemTable()}</div>`}
+async function uploadItemPhoto(dataUrl,code){if(!dataUrl||!dataUrl.startsWith('data:image/'))return dataUrl||'';const blob=await (await fetch(dataUrl)).blob();const ext=(blob.type.split('/')[1]||'jpeg').replace('jpeg','jpg');const path=`items/${Date.now()}-${String(code).replace(/[^a-zA-Z0-9_-]/g,'_')}.${ext}`;const {error}=await supabaseClient.storage.from('dress-photos').upload(path,blob,{contentType:blob.type,upsert:false});if(error)throw error;const {data}=supabaseClient.storage.from('dress-photos').getPublicUrl(path);return data.publicUrl}
+async function addItem(){let code=$('itCode').value.trim();if(!code||db.items.some(i=>i.code===code))return alert('أدخلي رقم قطعة فريداً');const btn=document.querySelector('#view button[onclick="addItem()"]');if(btn)btn.disabled=true;try{let photo=selectedItemPhoto?await uploadItemPhoto(selectedItemPhoto,code):'';let x={id:Date.now(),code,type:$('itType').value,name:$('itName').value,color:$('itColor').value,size:$('itSize').value,price:+$('itPrice').value,deposit:+$('itDeposit').value,photo,status:'متاح'};db.items.push(x);logAction('إضافة قطعة',x.code+' — '+(x.name||x.type));save();render()}catch(e){alert('ما قدرناش نرفعو الصورة. تأكدي من إنشاء Storage bucket باسم dress-photos وصلاحياته. '+(e.message||''));if(btn)btn.disabled=false}}
+function itemTable(){return `<table><thead><tr><th>الرقم</th><th>القطعة</th><th>المقاس</th><th>الكراء</th><th>الحالة</th><th></th></tr></thead><tbody>${db.items.map(i=>`<tr><td>${esc(i.code)}</td><td>${esc(i.name||i.type)} ${i.photo?`<br><img src="${i.photo}" alt="صورة ${esc(i.code)}" style="width:82px;height:92px;object-fit:cover;border-radius:9px;margin-top:6px">`:''}</td><td>${esc(i.size)}</td><td>${money(i.price)}</td><td><span class="tag">${esc(i.status)}</span></td><td>${role==='owner'?`<button class="danger" onclick="delItem(${i.id})">حذف</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد قطع مسجلة بعد</td></tr>'}</tbody></table>`}
+function delItem(id){if(confirm('حذف القطعة؟')){let removed=db.items.find(i=>i.id===id);db.items=db.items.filter(i=>i.id!==id);logAction('حذف قطعة',removed?.code||String(id));save();render()}}
+
+function availabilityPage(v){
+v.innerHTML=`<h2>هل الفستان متاح؟</h2>
+<div class="panel">
+<h3>البحث عن توفر قطعة</h3>
+<label>اختاري القطعة</label>
+<select id="avItem">${db.items.map(i=>`<option value="${esc(i.code)}">${esc(i.code)} — ${esc(i.name||i.type)}</option>`).join('')}</select>
+<div class="formgrid">
+<div><label>من تاريخ</label><input type="date" id="avFrom"></div>
+<div><label>إلى تاريخ</label><input type="date" id="avTo"></div>
+</div>
+<button style="margin-top:12px" onclick="checkAvailability()">تحققي من التوفر</button>
+<div id="avResult" style="margin-top:14px"></div>
+</div>
+<div class="panel" style="margin-top:14px"><h3>ملاحظة</h3><p class="muted">يعتبر الفستان محجوزاً إذا تداخلت الفترة المطلوبة مع فترة تسليم وإرجاع حجز نشط. الحجوزات الملغاة أو المكتملة لا تمنع الحجز.</p></div>`;
+}
+function checkAvailability(){
+let code=$('avItem').value,from=$('avFrom').value,to=$('avTo').value;
+if(!code||!from||!to||from>to)return alert('اختاري القطعة وتحققي من التواريخ');
+let item=db.items.find(i=>i.code===code);
+let clashes=db.bookings.filter(b=>b.itemCode===code&&!['ملغى','مكتمل'].includes(b.status)&&from<=b.returnDate&&to>=b.delivery);
+let result=$('avResult');
+if(clashes.length){
+result.innerHTML=`<div class="notice" style="border-color:#e6bcbc;background:#fff1f1"><b style="color:#a34444">غير متاح — القطعة محجوزة في هذه الفترة</b>${clashes.map(b=>`<p>الحجز ${esc(b.ref)} — ${esc(b.clientName)}<br>من ${b.delivery} إلى ${b.returnDate}</p>`).join('')}</div>`;
+}else if(item && ['في التنظيف','صيانة'].includes(item.status)){
+result.innerHTML=`<div class="notice"><b>غير جاهز للكراء حالياً</b><p>حالة القطعة: ${esc(item.status)}</p></div>`;
+}else{
+result.innerHTML=`<div class="notice" style="border-color:#b8d9c5;background:#effaf3"><b style="color:#39785b">متاح في الفترة المحددة ✓</b><p>${esc(code)} — من ${from} إلى ${to}</p></div>`;
+}
+}
+
+function clientsPage(v){v.innerHTML=`<h2>الزبونات</h2><div class="panel"><div class="formgrid"><div><label>الاسم واللقب</label><input id="clName"></div><div><label>رقم الهاتف</label><input id="clPhone"></div><div><label>رقم بطاقة التعريف (اختياري)</label><input id="clId"></div><div><label>العنوان (اختياري)</label><input id="clAddress"></div></div><button style="margin-top:12px" onclick="addClient()">حفظ الزبونة</button></div><div class="tablewrap"><table><tr><th>الاسم</th><th>الهاتف</th><th>العنوان</th></tr>${db.clients.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${esc(c.address)}</td></tr>`).join('')}</table></div>`}
+function addClient(){let name=$('clName').value.trim(),phone=$('clPhone').value.trim();if(!name||!phone)return alert('الاسم ورقم الهاتف مطلوبان');db.clients.push({id:Date.now(),name,phone,identity:$('clId').value,address:$('clAddress').value});logAction('إضافة زبونة',name+' — '+phone);save();render()}
+function bookingsPage(v){let opts=db.items.map(i=>`<option value="${esc(i.code)}">${esc(i.code)} — ${esc(i.name||i.type)} (${esc(i.status)})</option>`).join('');v.innerHTML=`<h2>الحجوزات</h2><div class="panel"><h3>حجز جديد</h3><div class="formgrid"><div><label>الزبونة</label><select id="bkClient">${db.clients.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.phone)}</option>`).join('')}</select></div><div><label>القطعة</label><select id="bkItem">${opts}</select></div><div><label>تاريخ المناسبة</label><input type="date" id="bkEvent"></div><div><label>تاريخ التسليم</label><input type="date" id="bkDelivery"></div><div><label>تاريخ الإرجاع</label><input type="date" id="bkReturn"></div><div><label>سعر الكراء (دج)</label><input type="number" id="bkRent"></div><div><label>الضمان (دج)</label><input type="number" id="bkDeposit"></div><div><label>التسبيق (دج)</label><input type="number" id="bkAdvance" value="0"></div><div class="full"><label>ملاحظات</label><textarea id="bkNotes"></textarea></div></div><button style="margin-top:12px" onclick="addBooking()">تسجيل الحجز</button></div><div class="tablewrap">${bookingTable(db.bookings.slice().reverse())}</div>`}
+function addBooking(){let c=db.clients.find(x=>x.id==$('bkClient').value),i=db.items.find(x=>x.code===$('bkItem').value);if(!c||!i)return alert('سجلي الزبونة والقطعة أولاً');let ev=$('bkEvent').value,d=$('bkDelivery').value,r=$('bkReturn').value;if(!ev||!d||!r||d>ev||r<ev)return alert('راجعي التواريخ');let clash=db.bookings.some(b=>b.itemCode===i.code&&!['ملغى','مكتمل'].includes(b.status)&&d<=b.returnDate&&r>=b.delivery);if(clash)return alert('هذه القطعة محجوزة خلال هذه الفترة. اختاري قطعة أو تاريخاً آخر.');let rent=+$('bkRent').value||i.price,dep=+$('bkDeposit').value||i.deposit,adv=+$('bkAdvance').value||0;if(adv>rent)return alert('التسبيق لا يمكن أن يتجاوز سعر الكراء');let b={id:Date.now(),ref:'RES-'+String(db.bookings.length+1).padStart(4,'0'),clientId:c.id,clientName:c.name,phone:c.phone,itemCode:i.code,event:ev,delivery:d,returnDate:r,rent,deposit:dep,advance:adv,notes:$('bkNotes').value,status:'محجوز',depositStatus:'لم يُرجع'};db.bookings.push(b);logAction('تسجيل حجز',b.ref+' — '+b.clientName+' — '+b.itemCode);save();render();alert('تم تسجيل الحجز')}
+function bookingTable(arr){return `<table><tr><th>رقم</th><th>الزبونة</th><th>القطعة</th><th>المناسبة</th><th>الإرجاع</th><th>الباقي</th><th>الحالة</th><th>الإجراء</th></tr>${arr.map(b=>`<tr><td>${b.ref}</td><td>${esc(b.clientName)}<br>${esc(b.phone)}</td><td>${esc(b.itemCode)}</td><td>${b.event}</td><td>${b.returnDate}</td><td>${money(b.rent-(b.advance||0)-db.payments.filter(p=>p.bookingId===b.id).reduce((s,p)=>s+p.amount,0))}</td><td>${esc(b.status)}</td><td><div class="actions"><button onclick="printReceipt(${b.id})">وصل</button><button class="secondary" onclick="setStatus(${b.id},'مؤجر')">تسليم</button><button class="secondary" onclick="setStatus(${b.id},'مكتمل')">إرجاع</button><button class="secondary" onclick="editBooking(${b.id})">تعديل</button>${role==='owner'?`<button class="danger" onclick="deleteBooking(${b.id})">حذف</button><button class="gold" onclick="setStatus(${b.id},'ملغى')">إلغاء</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="8">لا توجد حجوزات</td></tr>'}</table>`}
+
+function deleteBooking(id){if(role!=='owner')return alert('حذف الحجوزات متاح للمالكة فقط');const b=db.bookings.find(x=>x.id===id);if(!b)return;if(!confirm(`تأكيد حذف الحجز ${b.ref} للزبونة ${b.clientName}؟ هذا الإجراء لا يمكن التراجع عنه.`))return;db.bookings=db.bookings.filter(x=>x.id!==id);logAction('حذف حجز',b.ref+' — '+b.clientName+' — '+b.itemCode);save();render();alert('تم حذف الحجز')}
+function editBooking(id){const b=db.bookings.find(x=>x.id===id);if(!b)return;const clients=db.clients.map(c=>`${c.id}: ${c.name}`).join('\n');const items=db.items.map(i=>`${i.code}: ${i.name||i.type}`).join('\n');let clientId=prompt('رقم الزبونة من القائمة (اتركيه كما هو إذا لا تريدين التغيير):\n'+clients,b.clientId);if(clientId===null)return;let itemCode=prompt('رقم القطعة:\n'+items,b.itemCode);if(itemCode===null)return;let event=prompt('تاريخ المناسبة YYYY-MM-DD',b.event);if(event===null)return;let delivery=prompt('تاريخ التسليم YYYY-MM-DD',b.delivery);if(delivery===null)return;let returnDate=prompt('تاريخ الإرجاع YYYY-MM-DD',b.returnDate);if(returnDate===null)return;let rent=prompt('سعر الكراء بالدينار',b.rent);if(rent===null)return;let deposit=prompt('الضمان بالدينار',b.deposit);if(deposit===null)return;let advance=prompt('التسبيق بالدينار',b.advance||0);if(advance===null)return;const c=db.clients.find(x=>String(x.id)===String(clientId)),it=db.items.find(x=>x.code===itemCode.trim());if(!c||!it)return alert('رقم الزبونة أو القطعة غير صحيح');if(!event||!delivery||!returnDate||delivery>event||returnDate<event)return alert('راجعي التواريخ');const clash=db.bookings.some(x=>x.id!==id&&x.itemCode===it.code&&!['ملغى','مكتمل'].includes(x.status)&&delivery<=x.returnDate&&returnDate>=x.delivery);if(clash)return alert('القطعة محجوزة في هذه الفترة');rent=Number(rent);deposit=Number(deposit);advance=Number(advance);if(!Number.isFinite(rent)||rent<0||!Number.isFinite(deposit)||deposit<0||!Number.isFinite(advance)||advance<0||advance>rent)return alert('راجعي المبالغ');Object.assign(b,{clientId:c.id,clientName:c.name,phone:c.phone,itemCode:it.code,event,delivery,returnDate,rent,deposit,advance});logAction('تعديل حجز',b.ref+' — '+b.clientName);save();render();alert('تم تعديل الحجز')}
+
+function setStatus(id,s){let b=db.bookings.find(x=>x.id===id);if(!b)return;if(s==='مكتمل'){if(!confirm('تأكيد إرجاع القطعة؟ حدّثي حالة الضمان بعد ذلك.'))return;b.depositStatus='بانتظار إرجاع الضمان'}b.status=s;logAction('تغيير حالة حجز',b.ref+' ← '+s);let i=db.items.find(x=>x.code===b.itemCode);if(i)i.status=s==='مؤجر'?'مؤجر':s==='مكتمل'?'في التنظيف':s==='ملغى'?'متاح':'محجوز';save();render()}
+function returnsPage(v){v.innerHTML=`<h2>التسليم والإرجاع</h2><div class="tablewrap">${bookingTable(db.bookings.filter(b=>['محجوز','مؤجر','مكتمل'].includes(b.status)).slice().reverse())}</div><div class="panel" style="margin-top:14px"><h3>تحديث حالة قطعة</h3><label>رقم القطعة</label><select id="statusItem">${db.items.map(i=>`<option value="${esc(i.code)}">${esc(i.code)}</option>`).join('')}</select><label>الحالة الجديدة</label><select id="newStatus"><option>متاح</option><option>في التنظيف</option><option>صيانة</option></select><button style="margin-top:10px" onclick="updateItemStatus()">تحديث الحالة</button></div>`}
+function updateItemStatus(){let i=db.items.find(x=>x.code===$('statusItem').value);if(i){i.status=$('newStatus').value;logAction('تحديث حالة قطعة',i.code+' ← '+i.status);save();render()}}
+function receiptsPage(v){v.innerHTML=`<h2>الوصولات</h2><div class="panel no-print"><h3>إعدادات الوصل</h3><div class="formgrid"><div><label>لغة الوصل</label><select id="receiptLang"><option value="ar">العربية</option><option value="fr">Français</option><option value="bi">العربية + Français</option></select></div><div><label>عرض الورق</label><select id="receiptWidth"><option value="58">58 mm — صغير</option><option value="80" selected>80 mm — واسع</option></select></div></div><p class="muted">تقدري تبدلي اللغة وعرض الورق قبل الطباعة. الإعدادات تتطبق على كل الوصولات.</p></div><p class="muted">اختاري وصل حجز من الجدول واضغطي على زر «وصل» للطباعة أو حفظه PDF.</p><div class="tablewrap">${bookingTable(db.bookings.slice().reverse())}</div>`}
+function printReceipt(id){
+ let b=db.bookings.find(x=>x.id===id);if(!b)return;
+ const lang=$('receiptLang')?.value||'ar',width=$('receiptWidth')?.value||'80';
+ const labels={
+  ar:{title:'وصل حجز',ref:'رقم الحجز',client:'الزبونة',phone:'الهاتف',item:'القطعة',event:'تاريخ المناسبة',delivery:'تاريخ التسليم',ret:'تاريخ الإرجاع',rent:'سعر الكراء',deposit:'الضمان',advance:'التسبيق',paidMore:'دفعات إضافية',remaining:'باقي الكراء',notes:'ملاحظات',thanks:'شكراً لثقتكم بنا',footer:'La Maison Glam — نتشرف بخدمتكم',termsTitle:'شروط الكراء',term1:'يجب إرجاع الفستان قبل الساعة 11:00.',term2:'في حال تمزق الفستان، يُدفع تعويض عن الضرر ابتداءً من 2000 دج حسب حالة الفستان.'},
+  fr:{title:'BON DE RÉSERVATION',ref:'Réservation N°',client:'Cliente',phone:'Téléphone',item:'Tenue',event:'Date de l’événement',delivery:'Date de livraison',ret:'Date de retour',rent:'Location',deposit:'Caution',advance:'Avance',paidMore:'Paiements supplémentaires',remaining:'Reste à payer',notes:'Remarques',thanks:'Merci pour votre confiance',footer:'La Maison Glam — Au plaisir de vous servir',termsTitle:'Conditions de location',term1:'La robe doit être retournée avant 11h00.',term2:'En cas de déchirure, une indemnité à partir de 2 000 DA sera demandée selon l’état de la robe.'},
+  bi:{title:'وصل حجز — BON DE RÉSERVATION',ref:'رقم الحجز / Réservation N°',client:'الزبونة / Cliente',phone:'الهاتف / Téléphone',item:'القطعة / Tenue',event:'المناسبة / Événement',delivery:'التسليم / Livraison',ret:'الإرجاع / Retour',rent:'الكراء / Location',deposit:'الضمان / Caution',advance:'التسبيق / Avance',paidMore:'دفعات إضافية / Paiements',remaining:'الباقي / Reste',notes:'ملاحظات / Remarques',thanks:'شكراً لثقتكم — Merci pour votre confiance',footer:'La Maison Glam — نتشرف بخدمتكم',termsTitle:'شروط الكراء / Conditions de location',term1:'يجب إرجاع الفستان قبل الساعة 11:00. / Retour avant 11h00.',term2:'في حال تمزق الفستان، التعويض ابتداءً من 2000 دج حسب حالته. / En cas de déchirure, indemnité à partir de 2 000 DA selon son état.'}
+ };
+ const t=labels[lang],extra=db.payments.filter(p=>p.bookingId===b.id).reduce((s,p)=>s+(Number(p.amount)||0),0),remaining=Math.max(0,(Number(b.rent)||0)-(Number(b.advance)||0)-extra);
+ const rtl=lang!=='fr',dir=rtl?'rtl':'ltr';
+ const row=(label,value)=>`<div class="line"><span class="key">${label}</span><strong>${esc(value??'—')}</strong></div>`;
+ const note=b.notes?row(t.notes,b.notes):'';
+ const payRow=extra?row(t.paidMore,money(extra)):'';
+ const w=window.open('','_blank');if(!w)return alert('اسمحي بالنوافذ المنبثقة للطباعة');
+ w.document.write(`<!doctype html><html lang="${lang==='fr'?'fr':'ar'}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${t.title} ${b.ref}</title><style>
+ *{box-sizing:border-box} @page{size:${width}mm auto;margin:3mm}
+ body{font-family:Tahoma,Arial,sans-serif;color:#292329;margin:0 auto;padding:3mm;width:${width}mm;max-width:100%;font-size:${width==='58'?'10':'12'}px}
+ .receipt{border:1px solid #b99b76;border-radius:8px;padding:3mm}
+ .brand{text-align:center;color:#563d53;font-size:${width==='58'?'17':'20'}px;font-weight:900;letter-spacing:.4px;margin:1mm 0}
+ .sub{text-align:center;font-size:9px;color:#746575;margin:2px 0 8px}
+ .orn{text-align:center;color:#b18b55;letter-spacing:3px;font-size:12px;margin:4px 0}
+ h2{text-align:center;font-size:12px;color:#563d53;margin:3px 0 8px}
+ .line{display:flex;justify-content:space-between;gap:5px;padding:5px 1px;border-bottom:1px dashed #d9d0d8;align-items:flex-start}
+ .key{color:#625762;max-width:52%;}.line strong{text-align:left;max-width:48%;overflow-wrap:anywhere}
+ .total{margin-top:6px;padding:7px 5px;background:#f5eff4;border:1px solid #e5d8e2;border-radius:5px;font-size:1.05em}
+ .terms{margin-top:8px;padding:7px 6px;border:1px solid #d9c9d6;border-radius:5px;background:#fbf8fa;font-size:9px;line-height:1.6}.terms b{display:block;color:#563d53;margin-bottom:3px}.terms p{margin:3px 0}\n .foot{text-align:center;margin-top:9px;color:#563d53;font-weight:bold;line-height:1.7}
+ .small{text-align:center;font-size:8px;color:#827782;margin-top:4px}
+ @media print{body{padding:0}.receipt{border:1px solid #b99b76}}
+ </style></head><body><div class="receipt"><div class="brand">♛ LA MAISON GLAM</div><div class="sub">LOCATION DE ROBES & TENUES TRADITIONNELLES</div><div class="orn">✦ ✧ ✦</div><h2>${t.title}</h2>
+ ${row(t.ref,b.ref)}${row(t.client,b.clientName)}${row(t.phone,b.phone)}${row(t.item,b.itemCode)}${row(t.event,b.event)}${row(t.delivery,b.delivery)}${row(t.ret,b.returnDate)}${row(t.rent,money(b.rent))}${row(t.deposit,money(b.deposit))}${row(t.advance,money(b.advance))}${payRow}<div class="line total"><span class="key">${t.remaining}</span><strong>${money(remaining)}</strong></div>${note}<div class="terms"><b>${t.termsTitle}</b><p>• ${t.term1}</p><p>• ${t.term2}</p></div><div class="orn">✦ ✧ ✦</div><div class="foot">${t.thanks}<br>${t.footer}</div><div class="small">${new Date().toLocaleDateString(lang==='fr'?'fr-DZ':'ar-DZ')}</div></div><script>window.onload=()=>{window.print()}<\/script></body></html>`);
+ w.document.close();
+}
+function paymentsPage(v){
+ v.innerHTML=`<h2>تسجيل دفعة إضافية</h2><div class="panel">
+ <label>الحجز</label><select id="payBooking">${db.bookings.filter(b=>b.status!=='ملغى').map(b=>`<option value="${b.id}">${esc(b.ref)} — ${esc(b.clientName)} — الباقي ${money(b.rent-(b.advance||0)-(db.payments.filter(p=>p.bookingId===b.id).reduce((s,p)=>s+p.amount,0)))}</option>`).join('')}</select>
+ <div class="formgrid"><div><label>المبلغ المدفوع (دج)</label><input id="payAmount" type="number" min="1"></div><div><label>طريقة الدفع</label><select id="payMethod"><option>نقداً</option><option>تحويل</option><option>CCP</option><option>أخرى</option></select></div></div>
+ <label>ملاحظة</label><input id="payNote" placeholder="اختياري"><button style="margin-top:12px" onclick="addPayment()">حفظ الدفعة</button></div>
+ <div class="tablewrap"><table><tr><th>التاريخ</th><th>الحجز</th><th>المبلغ</th><th>الطريقة</th><th>الموظفة</th></tr>
+ ${db.payments.slice().reverse().map(p=>{let b=db.bookings.find(x=>x.id===p.bookingId);return `<tr><td>${esc(p.date)}</td><td>${esc(b?.ref||'—')} — ${esc(b?.clientName||'')}</td><td>${money(p.amount)}</td><td>${esc(p.method)}</td><td>${esc(p.by)}</td></tr>`}).join('')||'<tr><td colspan="5">لا توجد دفعات إضافية مسجلة</td></tr>'}</table></div>`;
+}
+function addPayment(){
+ let b=db.bookings.find(x=>x.id==$('payBooking').value),a=+$('payAmount').value;
+ if(!b||a<=0)return alert('اختاري الحجز وأدخلي مبلغاً صحيحاً');
+ let already=(b.advance||0)+db.payments.filter(p=>p.bookingId===b.id).reduce((s,p)=>s+p.amount,0);
+ if(a>b.rent-already)return alert('المبلغ أكبر من باقي الكراء المستحق');
+ let p={id:Date.now(),bookingId:b.id,amount:a,method:$('payMethod').value,note:$('payNote').value,date:today(),by:currentUserName};
+ db.payments.push(p);logAction('استلام دفعة',b.ref+' — '+money(a));save();render();alert('تم تسجيل الدفعة');
+}
+function financePage(v){let rents=db.bookings.reduce((s,b)=>s+(b.advance||0),0)+db.payments.reduce((s,p)=>s+p.amount,0),expenses=db.expenses.reduce((s,e)=>s+e.amount,0),deposits=db.bookings.filter(b=>b.status!=='ملغى'&&b.depositStatus!=='مُرجع').reduce((s,b)=>s+b.deposit,0);v.innerHTML=`<h2>الحسابات والضمانات</h2><div class="grid"><div class="stat">التسبيقات المقبوضة<b>${money(rents)}</b></div><div class="stat">المصاريف<b>${money(expenses)}</b></div><div class="stat">الضمانات غير المرجعة<b>${money(deposits)}</b></div><div class="stat">الصافي النقدي التقريبي<b>${money(rents-expenses)}</b></div></div><div class="panel" style="margin-top:14px"><h3>تسجيل مصروف</h3><label>البيان</label><input id="exName"><label>المبلغ (دج)</label><input type="number" id="exAmount"><button style="margin-top:10px" onclick="addExpense()">حفظ المصروف</button></div><div class="panel" style="margin-top:14px"><h3>إرجاع ضمان</h3>${db.bookings.filter(b=>b.status==='مكتمل'&&b.depositStatus!=='مُرجع').map(b=>`<p>${esc(b.ref)} — ${esc(b.clientName)} — ${money(b.deposit)} <button onclick="refund(${b.id})">تأكيد الإرجاع</button></p>`).join('')||'لا توجد ضمانات تنتظر الإرجاع'}</div>`}
+function addExpense(){let n=$('exName').value,a=+$('exAmount').value;if(!n||a<=0)return alert('أدخلي البيان والمبلغ');db.expenses.push({name:n,amount:a,date:today(),by:currentUserName});logAction('تسجيل مصروف',n+' — '+money(a));save();render()}
+function refund(id){let b=db.bookings.find(x=>x.id===id);if(b){b.depositStatus='مُرجع';logAction('إرجاع ضمان',b.ref+' — '+money(b.deposit));save();render()}}
+function activityPage(v){
+ v.innerHTML=`<h2>سجل نشاط الموظفات</h2><p class="muted">يسجل هذا الجدول العمليات الأساسية التي تمت داخل التطبيق وعلى هذا الحاسوب.</p>
+ <div class="tablewrap"><table><tr><th>التاريخ والوقت</th><th>المستخدم</th><th>العملية</th><th>التفاصيل</th></tr>
+ ${db.activity.map(a=>`<tr><td>${esc(a.date)}</td><td>${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.details)}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد عمليات مسجلة بعد</td></tr>'}
+ </table></div><button class="secondary no-print" style="margin-top:12px" onclick="window.print()">طباعة السجل</button>`;
+}
+function reportsPage(v){let total=db.bookings.filter(b=>b.status!=='ملغى').reduce((s,b)=>s+b.rent,0),paid=db.bookings.filter(b=>b.status!=='ملغى').reduce((s,b)=>s+(b.advance||0),0)+db.payments.reduce((s,p)=>s+(db.bookings.find(b=>b.id===p.bookingId&&b.status!=='ملغى')?p.amount:0),0);v.innerHTML=`<h2>التقارير</h2><div class="grid"><div class="stat">قيمة عقود الكراء<b>${money(total)}</b></div><div class="stat">التسبيقات المقبوضة<b>${money(paid)}</b></div><div class="stat">الباقي لدى الزبونات<b>${money(total-paid)}</b></div><div class="stat">عدد الزبونات<b>${db.clients.length}</b></div></div><p class="muted">قيمة العقود ليست ربحاً صافياً؛ الربح يحتاج تسجيل جميع المصاريف والمبالغ المستحقة والمقبوضة.</p>`}
+async function settingsPage(v){
+ v.innerHTML=`<h2>إدارة الموظفات والإعدادات</h2>
+ <div class="panel"><h3>إضافة حساب موظفة حقيقي</h3><p class="muted">كل موظفة تدخل ببريدها وكلمة سرها. إنشاء الحساب يتم بأمان عبر Supabase Edge Function، وليس بكلمات مرور محفوظة داخل التطبيق.</p><div class="formgrid"><div><label>اسم الموظفة</label><input id="newEmpName" placeholder="الاسم الكامل"></div><div><label>البريد الإلكتروني</label><input id="newEmpEmail" type="email" placeholder="staff@example.com"></div><div><label>كلمة السر المؤقتة</label><input id="newEmpPass" type="password" minlength="6" placeholder="6 أحرف على الأقل"></div></div><label>الصلاحيات المسموحة</label><div class="formgrid">${tabs.filter(t=>t[0]!=='settings').map(t=>`<label><input type="checkbox" class="empPermission" value="${t[0]}" ${['home','items','availability','clients','bookings','returns','receipts'].includes(t[0])?'checked':''} style="width:auto"> ${t[1]}</label>`).join('')}</div><button style="margin-top:12px" onclick="addEmployee()">إنشاء حساب الموظفة</button><p class="muted">ملاحظة: لازم إعداد Edge Function وSQL المرفقين مع الملفات مرة واحدة في Supabase.</p></div>
+ <div class="panel" style="margin-top:14px"><h3>الموظفات المسجلات</h3><div id="staffList">جاري تحميل الحسابات…</div></div>
+ <div class="panel" style="margin-top:14px"><h3>النسخ الاحتياطي</h3><p class="muted">نزّلي نسخة احتياطية بانتظام واحتفظي بها في مكان آمن.</p><button onclick="backup()">تنزيل نسخة احتياطية</button><hr><h3>استرجاع نسخة</h3><input type="file" id="restoreFile" accept="application/json"><button style="margin-top:10px" onclick="restore()">استرجاع البيانات</button><hr><h3>الصور</h3><p class="muted">صور القطع الجديدة تُرفع إلى Supabase Storage وتظهر من أي جهاز. الصور القديمة المخزنة كبيانات محلية تحتاج ترحيل منفصل.</p><button class="secondary" onclick="migrateOldPhotos()">ترحيل صور القطع القديمة إلى السحابة</button><hr><h3>ملاحظة الخصوصية</h3><p class="muted">احتفظي بنسخة احتياطية ولا تشاركيها.</p></div>`;
+ await loadStaffList();
+}
+async function loadStaffList(){const host=$('staffList');if(!host)return;try{const {data,error}=await supabaseClient.from('staff_profiles').select('user_id,role,full_name,active,permissions').neq('role','owner').order('full_name');if(error)throw error;host.innerHTML=`<div class="tablewrap"><table><tr><th>الاسم</th><th>الصلاحيات</th><th>الحالة</th><th>إجراء</th></tr>${(data||[]).map(e=>`<tr><td>${esc(e.full_name||'—')}</td><td>${(Array.isArray(e.permissions)?e.permissions:[]).map(x=>tabs.find(t=>t[0]===x)?.[1]||x).join('، ')||'الافتراضية'}</td><td>${e.active===false?'موقوفة':'نشطة'}</td><td><button class="${e.active===false?'gold':'danger'}" onclick="toggleStaff('${e.user_id}',${e.active===false?'true':'false'})">${e.active===false?'تفعيل':'إيقاف'}</button></td></tr>`).join('')||'<tr><td colspan="4">لا توجد موظفات بعد</td></tr>'}</table></div>`}catch(e){host.textContent='تعذر تحميل الموظفات: '+(e.message||'تحققي من صلاحيات staff_profiles')}}
+async function addEmployee(){const name=$('newEmpName').value.trim(),email=$('newEmpEmail').value.trim(),password=$('newEmpPass').value,permissions=[...document.querySelectorAll('.empPermission:checked')].map(x=>x.value);if(!name||!email||password.length<6)return alert('أدخلي الاسم والبريد وكلمة سر من 6 أحرف على الأقل');try{const {data,error}=await supabaseClient.functions.invoke('create-staff',{body:{name,email,password,permissions}});if(error)throw error;if(data?.error)throw new Error(data.error);logAction('إنشاء حساب موظفة',name+' — '+email);save();alert('تم إنشاء حساب الموظفة. تقدر تدخل بالبريد وكلمة السر المحددين.');render()}catch(e){alert('ما قدرناش ننشئو الحساب: '+(e.message||'تأكدي من نشر create-staff وضبط الأسرار في Supabase'))}}
+async function toggleStaff(userId,active){if(!confirm(active?'تفعيل حساب الموظفة؟':'إيقاف حساب الموظفة؟'))return;try{const {error}=await supabaseClient.from('staff_profiles').update({active}).eq('user_id',userId);if(error)throw error;logAction(active?'تفعيل موظفة':'إيقاف موظفة',userId);save();await loadStaffList()}catch(e){alert('تعذر تحديث الحساب: '+(e.message||''))}}
+async function migrateOldPhotos(){const old=db.items.filter(i=>i.photo&&i.photo.startsWith('data:image/'));if(!old.length)return alert('ما كاش صور قديمة تحتاج الترحيل');if(!confirm(`راح نرفع ${old.length} صورة إلى Supabase Storage. نكملو؟`))return;let ok=0;for(const item of old){try{item.photo=await uploadItemPhoto(item.photo,item.code);ok++}catch(e){console.error(e)}}save();render();alert(`تم رفع ${ok} من أصل ${old.length} صورة. ${old.length-ok?'بعض الصور فشل رفعها، عاودي المحاولة.':''}`)}
+function backup(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='la-maison-glam-backup-2026-11-18.json';a.click();URL.revokeObjectURL(a.href)}
+function restore(){let f=$('restoreFile').files[0];if(!f)return alert('اختاري ملف النسخة');let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.accounts||!Array.isArray(x.items))throw 0;db=x;save();alert('تم الاسترجاع');render()}catch(e){alert('ملف غير صالح')}};r.readAsText(f)}
+boot();
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('PWA:',e));
+</script></body></html>
