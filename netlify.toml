@@ -1,0 +1,10 @@
+[build]
+  # Plain static site: a single self-contained HTML file, no build step.
+  publish = "."
+  command = ""
+
+# The app's page is not named index.html, so serve it at the site root.
+[[redirects]]
+  from = "/"
+  to = "/La_Maison_Glam_receipts_with_terms-3.html"
+  status = 200
