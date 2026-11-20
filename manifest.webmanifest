@@ -1,0 +1,10 @@
+{
+  "name": "La Maison Glam",
+  "short_name": "Maison Glam",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fbf7f1",
+  "theme_color": "#563d53",
+  "lang": "ar",
+  "dir": "rtl"
+}
